@@ -1,17 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sprout, MapPin, Calendar, TrendingUp } from 'lucide-react';
 
-// Interface para el proyecto (luego vendrá de la DB)
+// Interface actualizada para el proyecto (desde la DB)
 interface Project {
-  id: number;
+  id: string; // Ahora string porque viene de MongoDB
   name: string;
   location: string;
-  status: 'activo' | 'cosecha' | 'finalizado' | 'planificado';
-  plantingDate: string;
-  harvestDate?: string;
+  status: 'activo' | 'terminado'; // Solo estos 2 estados
+  planting_date: string; // snake_case desde la API
+  harvest_date?: string; // snake_case desde la API
   area: string;
-  investment: string;
-  progress?: number;
+  // Removimos investment y progress por ahora
 }
 
 // Componente para cada tarjeta de proyecto
@@ -19,8 +18,7 @@ const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
   const getStatusColor = (status: Project['status']) => {
     switch (status) {
       case 'activo': return 'bg-green-100 text-green-800 border-green-200';
-      case 'cosecha': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'finalizado': return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'terminado': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-blue-100 text-blue-800 border-blue-200';
     }
   };
@@ -51,45 +49,24 @@ const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
         <div className="space-y-3">
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-600">Fecha de siembra:</span>
-            <span className="font-medium">{project.plantingDate}</span>
+            <span className="font-medium">{project.planting_date}</span>
           </div>
           
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-600">Área:</span>
             <span className="font-medium">{project.area}</span>
           </div>
-          
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">Inversión total:</span>
-            <span className="font-medium text-green-600">${project.investment}</span>
-          </div>
 
-          {project.status === 'activo' && project.harvestDate && (
+          {project.status === 'activo' && project.harvest_date && (
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">Próxima cosecha:</span>
               <span className="font-medium text-blue-600 flex items-center space-x-1">
                 <Calendar size={14} />
-                <span>{project.harvestDate}</span>
+                <span>{project.harvest_date}</span>
               </span>
             </div>
           )}
         </div>
-
-        {/* Progress bar para proyectos activos */}
-        {project.status === 'activo' && project.progress && (
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-gray-600 mb-1">
-              <span>Progreso del ciclo</span>
-              <span>{project.progress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${project.progress}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
 
         {/* Acciones rápidas */}
         <div className="flex space-x-2 mt-4 pt-4 border-t border-gray-100">
@@ -106,31 +83,67 @@ const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
 };
 
 const Home: React.FC = () => {
-  // Datos quemados por ahora (luego vendrán de la DB)
-  const projects: Project[] = [
-    {
-      id: 1,
-      name: "Yuca Cayetano",
-      location: "Lote A - Sector Norte",
-      status: "activo",
-      plantingDate: "15 Mar 2025",
-      harvestDate: "15 Nov 2025",
-      area: "2.5 hectáreas",
-      investment: "8,500",
-      progress: 65
-    },
-    {
-      id: 2,
-      name: "Yuca Balastre",
-      location: "Lote B - Sector Sur",
-      status: "activo",
-      plantingDate: "22 Mar 2025",
-      harvestDate: "22 Nov 2025",
-      area: "1.8 hectáreas",
-      investment: "6,200",
-      progress: 60
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Función para obtener proyectos desde la API
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      // Cambia esta URL por la correcta de tu backend
+      const response = await fetch('http://localhost:8000/projects'); 
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      // Verificar que la respuesta sea JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('La respuesta no es JSON válido');
+      }
+      
+      const data = await response.json();
+      setProjects(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar proyectos');
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // useEffect para cargar los proyectos al montar el componente
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-gray-500">Cargando proyectos...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="text-red-800">Error: {error}</div>
+          <button 
+            onClick={fetchProjects}
+            className="mt-2 bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -141,7 +154,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* Resumen rápido */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
           <div className="flex items-center space-x-2">
             <Sprout className="text-green-600" size={20} />
@@ -152,23 +165,13 @@ const Home: React.FC = () => {
           </p>
         </div>
         
-        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
           <div className="flex items-center space-x-2">
-            <Calendar className="text-yellow-600" size={20} />
-            <span className="text-yellow-800 font-medium">Próximas Cosechas</span>
+            <Calendar className="text-gray-600" size={20} />
+            <span className="text-gray-800 font-medium">Proyectos Terminados</span>
           </div>
-          <p className="text-2xl font-bold text-yellow-700 mt-1">
-            {projects.filter(p => p.status === 'cosecha').length}
-          </p>
-        </div>
-        
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <div className="flex items-center space-x-2">
-            <TrendingUp className="text-blue-600" size={20} />
-            <span className="text-blue-800 font-medium">Inversión Total</span>
-          </div>
-          <p className="text-2xl font-bold text-blue-700 mt-1">
-            ${projects.reduce((total, p) => total + parseFloat(p.investment.replace(',', '')), 0).toLocaleString()}
+          <p className="text-2xl font-bold text-gray-700 mt-1">
+            {projects.filter(p => p.status === 'terminado').length}
           </p>
         </div>
       </div>
@@ -192,6 +195,18 @@ const Home: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Mensaje si no hay proyectos */}
+        {projects.length === 0 && (
+          <div className="col-span-full text-center py-12">
+            <Sprout className="mx-auto text-gray-400 mb-4" size={48} />
+            <h3 className="text-lg font-medium text-gray-700 mb-2">No hay proyectos aún</h3>
+            <p className="text-gray-500 mb-4">Comienza creando tu primer proyecto agrícola</p>
+            <button className="bg-green-600 text-white py-2 px-4 rounded text-sm font-medium hover:bg-green-700 transition-colors">
+              Crear Primer Proyecto
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
