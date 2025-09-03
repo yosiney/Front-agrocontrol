@@ -91,8 +91,7 @@ const Home: React.FC = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      // Cambia esta URL por la correcta de tu backend
-      const response = await fetch('http://localhost:8000/projects'); 
+      const response = await fetch('http://localhost:6868/projects'); 
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -182,17 +181,16 @@ const Home: React.FC = () => {
           <ProjectCard key={project.id} project={project} />
         ))}
         
-        {/* Card para agregar nuevo proyecto */}
-        <div className="bg-white rounded-lg shadow-md border-2 border-dashed border-gray-300 hover:border-green-400 transition-colors cursor-pointer">
+        {/* Card para agregar nuevo proyecto - solo visual, no funcional aquí */}
+        <div className="bg-white rounded-lg shadow-md border-2 border-dashed border-gray-300 hover:border-green-400 transition-colors cursor-pointer opacity-50">
           <div className="p-6 h-full flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <span className="text-2xl text-gray-400">+</span>
             </div>
             <h3 className="text-lg font-medium text-gray-700 mb-2">Nuevo Proyecto</h3>
-            <p className="text-sm text-gray-500 mb-4">Agrega un nuevo cultivo para comenzar a trackear</p>
-            <button className="bg-green-600 text-white py-2 px-4 rounded text-sm font-medium hover:bg-green-700 transition-colors">
-              Crear Proyecto
-            </button>
+            <p className="text-sm text-gray-500 mb-4">
+              Usa "Administrar Proyectos" en el menú para crear nuevos cultivos
+            </p>
           </div>
         </div>
 
@@ -201,10 +199,9 @@ const Home: React.FC = () => {
           <div className="col-span-full text-center py-12">
             <Sprout className="mx-auto text-gray-400 mb-4" size={48} />
             <h3 className="text-lg font-medium text-gray-700 mb-2">No hay proyectos aún</h3>
-            <p className="text-gray-500 mb-4">Comienza creando tu primer proyecto agrícola</p>
-            <button className="bg-green-600 text-white py-2 px-4 rounded text-sm font-medium hover:bg-green-700 transition-colors">
-              Crear Primer Proyecto
-            </button>
+            <p className="text-gray-500 mb-4">
+              Ve a "Administrar Proyectos" en el menú lateral para crear tu primer proyecto agrícola
+            </p>
           </div>
         )}
       </div>

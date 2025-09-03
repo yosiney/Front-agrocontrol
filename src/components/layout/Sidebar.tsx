@@ -4,17 +4,27 @@ import { Home, Sprout, FileText, DollarSign, BarChart3, Settings } from 'lucide-
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  activeItem: string;
+  onItemClick: (item: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, onItemClick }) => {
   const menuItems = [
-    { icon: Home, label: 'Inicio', active: true },
-    { icon: Sprout, label: 'Proyectos' },
-    { icon: DollarSign, label: 'Gastos' },
-    { icon: BarChart3, label: 'Reportes' },
-    { icon: FileText, label: 'Inventario' },
-    { icon: Settings, label: 'Configuración' },
+    { icon: Home, label: 'Inicio', id: 'home' },
+    { icon: Sprout, label: 'Administrar Proyectos', id: 'manage-projects' },
+    { icon: DollarSign, label: 'Gastos', id: 'expenses' },
+    { icon: BarChart3, label: 'Reportes', id: 'reports' },
+    { icon: FileText, label: 'Inventario', id: 'inventory' },
+    { icon: Settings, label: 'Configuración', id: 'settings' },
   ];
+
+  const handleItemClick = (itemId: string) => {
+    onItemClick(itemId);
+    // Cerrar sidebar en móvil después de seleccionar
+    if (window.innerWidth < 1024) {
+      onClose();
+    }
+  };
 
   return (
     <>
@@ -42,15 +52,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         
         <nav className="p-4">
           <ul className="space-y-2">
-            {menuItems.map((item, index) => (
-              <li key={index}>
-                <button className={`
-                  w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors
-                  ${item.active 
-                    ? 'bg-green-100 text-green-800 font-medium' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                  }
-                `}>
+            {menuItems.map((item) => (
+              <li key={item.id}>
+                <button 
+                  onClick={() => handleItemClick(item.id)}
+                  className={`
+                    w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors
+                    ${activeItem === item.id
+                      ? 'bg-green-100 text-green-800 font-medium'
+                      : 'text-gray-700 hover:bg-gray-100'
+                    }
+                  `}
+                >
                   <item.icon size={20} />
                   <span>{item.label}</span>
                 </button>
